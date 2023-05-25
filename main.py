@@ -1,16 +1,14 @@
 from fastapi import FastAPI
-import random
 import pickle
-import json
 import pandas as pd
 import numpy as np
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from models import *
 
+import spotipy
 from dotenv import load_dotenv
 from supabase import create_client, Client
-import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
 
@@ -64,6 +62,8 @@ def get_users_knowledge_bases(user_id: str):
         return user_already_liked.data[0]
     return None
 
+
+# https://jamspotapi-1-s6116691.deta.app
 load_dotenv()
 app = FastAPI()
 
@@ -87,7 +87,7 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = Client(supabase_url, supabase_key)
 
-spotify_client_id = os.getenv('SPOTIFY_CLIENT_ID')
+spotify_client_id = os.getenv('SPOTIFY_SECRET')
 spotify_secret = os.getenv('SPOTIFY_SECRET')
 client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_secret)
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
@@ -95,7 +95,7 @@ sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 @app.get('/')
 async def root():
-    return {"hi": "Some msg", "data": 0}
+    return {"hi": "Some msg", "data": 0}    
     
 @app.post('/tracks')
 async def get_cold_start_recommendations(sq: SearchQuery):
@@ -136,7 +136,7 @@ async def get_cold_start_recommendations(prefs: Preferences):
         topN = []
         i = 0
         for _, row in result.iterrows():
-            if(i < 10):
+            if(i < 30):
                 track = sp.track(row['id'])
                 track_cover = track['album']['images'][0]['url']
 
@@ -169,7 +169,7 @@ async def get_existing_user_recommendations(user_id: str = ""):
         topN = []
         i = 0
         for _, row in result.iterrows():
-            if(i < 10):
+            if(i < 30):
                 track = sp.track(row['id'])
                 track_cover = track['album']['images'][0]['url']
 
@@ -210,7 +210,7 @@ async def get_diversified_recommendations(user_id: str = ""):
         
     with open('kmean_recommender.m5', 'rb') as f:
         kmean = pickle.load(f)
-        kmean.scale_data_with_user(result_content)
+        kmean.scale_data_with_user(result_content.head(20))
         kmean.create_clustering_model()
         result = kmean.predict_users_playlist()
 
