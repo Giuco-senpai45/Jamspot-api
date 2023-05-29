@@ -87,7 +87,7 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = Client(supabase_url, supabase_key)
 
-spotify_client_id = os.getenv('SPOTIFY_SECRET')
+spotify_client_id = os.getenv('SPOTIFY_CLIENT')
 spotify_secret = os.getenv('SPOTIFY_SECRET')
 client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_secret)
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
