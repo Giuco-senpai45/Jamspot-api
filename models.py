@@ -36,3 +36,10 @@ class LikedSong(BaseModel):
 class LikedSongJson(BaseModel):
     user_id: str
     song: Song
+
+class UserChangedPreferences(BaseModel):
+    user_id: str
+    newLikedTracks: List[Song]
+    speed: int
+    mood: int
+    emotion: int

@@ -53,7 +53,7 @@ class ContentBasedRecommender:
 
         for q in qs:
             question = q
-            if question == "end":
+            if question == "end":  
                 break
             else:
                 total_dictionary[question] = ""

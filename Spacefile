@@ -1,0 +1,25 @@
+# Spacefile Docs: https://go.deta.dev/docs/spacefile/v0
+v: 0
+micros:
+  - name: api
+    src: ./
+    engine: python3.9
+    primary: true
+    run: uvicorn main:app
+    public_routes:
+      - "/*"
+    presets:
+      env:
+        - name: SPOTIFY_CLIENT
+          description: Link to the spotify client id
+          default: "1a77054d5f374a238165a57dbe516ce8"
+        - name: SPOTIFY_SECRET
+          description: Link to the spotify secret
+          default: "286bdfbd0fe84ea7a135a89bc6b625ec"
+        - name: SUPABASE_URL
+          description: Link to the supabase database
+          default: "https://vocnbaffhtwjwconvhzm.supabase.co"
+        - name: SUPABASE_KEY
+          description: Link to the supabase secret
+          default: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvY25iYWZmaHR3andjb252aHptIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NzY1NTgzMDIsImV4cCI6MTk5MjEzNDMwMn0.yps5P__duw7_uOxZlxjKlaltI2wjVDeSLDOlE0BPIoo"
+        

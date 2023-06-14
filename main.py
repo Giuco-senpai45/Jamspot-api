@@ -35,7 +35,7 @@ def like_track(user_id: str, track: Song):
         lg = {"user_id": user_id, "track_id": track.id}
         supabase.table('user_liked_tracks').insert(lg).execute()
 
-def change_user_preferences(user_prefs: UserKnowledgeBases):
+def add_initial_user_preferences(user_prefs: UserKnowledgeBases):
     existing_preferences = supabase.table("user_preferences").select("*").eq("id", user_prefs.user_id).execute()
     if len(existing_preferences.data) <= 0:
         curr_prefs = {'id': user_prefs.user_id, 'mood': user_prefs.mood, 'speed': user_prefs.speed,'emotion': user_prefs.emotion,}
@@ -98,12 +98,29 @@ async def root():
     return {"hi": "Some msg", "data": 0}    
     
 @app.post('/tracks')
-async def get_cold_start_recommendations(sq: SearchQuery):
+async def get_tracks_list(sq: SearchQuery):
     mask = np.column_stack([tracksDf['track_name'].str.contains(sq.name, na=False, case=False) for col in tracksDf])
     df = tracksDf.loc[mask.any(axis=1)]
     found_tracks =  convert_df_to_songs(df)
     return SongsList(tracks=found_tracks)
-    
+
+
+@app.post("/preferences")
+async def post_user_change_preferences(prefs: UserChangedPreferences):
+    update_prefs = {'mood': prefs.mood, 'speed': prefs.speed,'emotion': prefs.emotion}
+    supabase.table("user_preferences").update(update_prefs).eq("id", prefs.user_id).execute()
+
+    user_id = prefs.user_id
+    for song in prefs.newLikedTracks:
+        track_id = song.id
+        spotify_song = sp.track(track_id)
+        song.albumUrl = spotify_song['album']['images'][0]['url'] if len(spotify_song['album']['images']) > 0 else ""
+        create_track(song)
+
+        user_already_liked = supabase.table("user_liked_tracks").select("*").eq("user_id", user_id).eq("track_id", track_id).execute()
+        if len(user_already_liked.data) <= 0:
+            lg = {"user_id": user_id, "track_id": track_id}
+            supabase.table('user_liked_tracks').insert(lg).execute()
 
 @app.post('/recommend')
 async def get_cold_start_recommendations(prefs: Preferences):
@@ -123,7 +140,7 @@ async def get_cold_start_recommendations(prefs: Preferences):
         result = content_recommender.get_total_score()
 
         user_prefs = UserKnowledgeBases(user_id=prefs.user_id, mood=prefs.mood, speed=prefs.speed, emotion=prefs.emotion)
-        change_user_preferences(user_prefs)
+        add_initial_user_preferences(user_prefs)
 
         for track in prefs.music:
             sp_tr = sp.track(track.id)
@@ -138,7 +155,7 @@ async def get_cold_start_recommendations(prefs: Preferences):
         for _, row in result.iterrows():
             if(i < 30):
                 track = sp.track(row['id'])
-                track_cover = track['album']['images'][0]['url']
+                track_cover = track['album']['images'][0]['url'] if len(track['album']['images']) > 0 else ""
 
                 song = Song(id=row['id'], artist=row['artist_name'], title=row['track_name'], albumUrl=track_cover)
                 topN.append(song)
@@ -166,12 +183,13 @@ async def get_existing_user_recommendations(user_id: str = ""):
         intersection = content_recommender.feature_genre_intersection(recommended_features, recommended_genres)
         result = content_recommender.get_total_score()
             
+        result = result[:50]
         topN = []
         i = 0
         for _, row in result.iterrows():
-            if(i < 30):
+            if(i < 10):
                 track = sp.track(row['id'])
-                track_cover = track['album']['images'][0]['url']
+                track_cover = track['album']['images'][0]['url'] if len(track['album']['images']) > 0 else ""
 
                 song = Song(id=row['id'], artist=row['artist_name'], title=row['track_name'], albumUrl=track_cover)
                 topN.append(song)
